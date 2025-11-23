@@ -1,89 +1,196 @@
 LAYER_HEIGHT = 0.2;
 PCB_X = 55;
 PCB_Y = 1.8;
-PARTS_Y = 4;
+PARTS_Y = 5;
 PCB_Z = 26;
 WALL_THICKNESS = 1.6;
+
+PCB_BUFFER_Z = 4.5;
 
 GAP = 20; // Gap between PCB and sensor
 
 SEN66_X = 55; // Hopefully
 SEN66_Y = 21.3; // Hopefully
 SEN66_Z = 26; // Hopefully
+SEN66_BUFFER_Z = PCB_BUFFER_Z;
 
-module BoltPost(post_size, nominal_length, bolt_diameter, head_length, head_diameter, flat_to_flat, nut_length, from_bolt_bottom) {
+BOLT_DIAMETER = 3.5;
+BOLT_HEAD_DIAMETER = 6;
+BOLT_HEAD_HEIGHT = 3;
+NUT_FLAT_TO_FLAT = 5.4;
+NUT_LENGTH = 3;
+FROM_BOLT_BOTTOM = 1;
+POST_SIZE = 10;
+
+inner_y = PCB_Y + PARTS_Y + SEN66_Y + GAP;
+inner_z = PCB_Z + (PCB_BUFFER_Z * 2);
+
+module BoltNegative(post_size, nominal_length, head_length) {
+    flat_to_flat = NUT_FLAT_TO_FLAT;
+    bolt_diameter = BOLT_DIAMETER;
+    head_diameter = BOLT_HEAD_DIAMETER;
+    from_bolt_bottom = FROM_BOLT_BOTTOM;
+    nut_length = NUT_LENGTH;
+
     corner_to_corner = flat_to_flat * 1.1547;
 
-    difference() {
-        linear_extrude(nominal_length + head_length)
-            square(size = post_size, center = true);
+    union() {
+        // Bridges for nut slot
+        translate([0, 0, from_bolt_bottom + nut_length + LAYER_HEIGHT])
+            linear_extrude(LAYER_HEIGHT)
+            square(size = [bolt_diameter, bolt_diameter], center = true);
 
-        union() {
-            // Bridges for nut slot
-            translate([0, 0, from_bolt_bottom + nut_length + LAYER_HEIGHT])
-                linear_extrude(LAYER_HEIGHT)
-                square(size = [bolt_diameter, bolt_diameter], center = true);
+        // Bridges for nut slot
+        translate([0, 0, from_bolt_bottom + nut_length - 0.1])
+            linear_extrude(LAYER_HEIGHT + 0.1)
+            square(size = [bolt_diameter, flat_to_flat], center = true);
 
-            // Bridges for nut slot
-            translate([0, 0, from_bolt_bottom + nut_length - 0.1])
-                linear_extrude(LAYER_HEIGHT + 0.1)
-                square(size = [bolt_diameter, flat_to_flat], center = true);
+        // Slot for nut
+        color("pink")
+            translate([-((((post_size - corner_to_corner) / 2) / 2) + 0.1), 0, from_bolt_bottom])
+            linear_extrude(nut_length)
+            square(size = [corner_to_corner + ((post_size - corner_to_corner) / 2) + 0.1, flat_to_flat], center = true);
 
-            // Slot for nut
-            color("pink")
-                translate([-((((post_size - corner_to_corner) / 2) / 2) + 0.1), 0, from_bolt_bottom])
-                linear_extrude(nut_length)
-                square(size = [corner_to_corner + ((post_size - corner_to_corner) / 2) + 0.1, flat_to_flat], center = true);
+        // Bolt head sink
+        color("blue")
+            translate([0, 0, nominal_length])
+            linear_extrude(head_length + 1)
+            circle(d = head_diameter, $fn = 50);
 
-            // Bolt head sink
-            color("blue")
-                translate([0, 0, nominal_length])
-                linear_extrude(head_length + 1)
-                circle(d = head_diameter, $fn = 50);
-
-            // Bolt shaft
-            color("green")
-                translate([0, 0, -1])
-                linear_extrude(nominal_length + 2)
-                circle(d = bolt_diameter, $fn = 50);
-        }
+        // Bolt shaft
+        color("green")
+            translate([0, 0, -1])
+            linear_extrude(nominal_length + 2)
+            circle(d = bolt_diameter, $fn = 50);
     }
 }
 
-module ABolt(post_size) {
-    BoltPost(post_size, 12, 3.5, 3, 6, 5.4, 3, 1);
+module BoltPositive(post_size, nominal_length, head_length) {
+    difference() {
+        linear_extrude(nominal_length + head_length)
+            square(size = post_size, center = true);
+    }
 }
 
-module BoltPosts(width) {
-    post_size = 10;
+module BoltPostsPositive(width, height) {
+    post_size = POST_SIZE;
+    post_height = height;
 
     move = (width / 2) - (post_size / 2);
 
     translate([move, 0, 0])
-        ABolt(post_size);
+        BoltPositive(post_size, post_height - BOLT_HEAD_HEIGHT, BOLT_HEAD_HEIGHT);
 
     translate([-move, 0, 0])
         rotate(180)
-        ABolt(post_size);
+        BoltPositive(post_size, post_height - BOLT_HEAD_HEIGHT, BOLT_HEAD_HEIGHT);
 }
 
-//BoltPosts(55);
+module BoltPostsNegative(width, height) {
+    post_size = 10;
+    post_height = height;
 
-inner_y = PCB_Y + PARTS_Y + SEN66_Y + GAP;
-inner_z = max(PCB_Z, SEN66_Z);
-inner_x = max(PCB_X, SEN66_X);
+    move = (width / 2) - (post_size / 2);
 
-#difference() {
-    // Exterior
-    translate([0, 0, -WALL_THICKNESS])
-        linear_extrude(inner_z + (WALL_THICKNESS * 2))
-        square(size = [inner_x + (WALL_THICKNESS * 2), inner_y + (WALL_THICKNESS * 2)], center = true);
+    translate([move, 0, 0])
+        BoltNegative(post_size, post_height - BOLT_HEAD_HEIGHT, BOLT_HEAD_HEIGHT);
 
-    // Interior
-    linear_extrude(inner_z)
-        square(size = [inner_x, inner_y], center = true);
+    translate([-move, 0, 0])
+        rotate(180)
+        BoltNegative(post_size, post_height - BOLT_HEAD_HEIGHT, BOLT_HEAD_HEIGHT);
 }
 
-tab_z = 3;
-tab_y = 2;
-tab_x = 5;
+module Main() {
+    inner_x = max(PCB_X, SEN66_X);
+
+    difference() {
+        // Exterior
+        translate([0, 0, -WALL_THICKNESS])
+            linear_extrude(inner_z + (WALL_THICKNESS * 2))
+            square(size = [inner_x + (WALL_THICKNESS * 2), inner_y + (WALL_THICKNESS * 2)], center = true);
+
+        // Interior
+        linear_extrude(inner_z)
+            square(size = [inner_x, inner_y], center = true);
+    }
+}
+
+module BottomPCBTabs(tab_x, tab_y, tab_z) {
+    for (i = [1, -1]) {
+        translate([i * ((PCB_X / 2) - (tab_x / 2)), 0, -PCB_BUFFER_Z])
+            linear_extrude(PCB_BUFFER_Z)
+            square(size = [tab_x, tab_y * 2 + PCB_Y], center = true);
+        for (j = [1, -1]) {
+            translate([i * ((PCB_X / 2) - (tab_x / 2)), j * (((tab_y / 2) + (PCB_Y / 2))), 0])
+                linear_extrude(tab_z)
+                square(size = [tab_x, tab_y], center = true);
+        }
+    }
+}
+
+module PCBTabs() {
+    tab_z = 3;
+    tab_y = 2;
+    tab_x = 5;
+
+    translate([0, 0, (PCB_Z / 2) + PCB_BUFFER_Z]) {
+        rotate([180, 0, 0])
+            translate([0, 0, -PCB_Z / 2])
+            BottomPCBTabs(tab_x, tab_y, tab_z);
+        translate([0, 0, -PCB_Z / 2])
+            BottomPCBTabs(tab_x, tab_y, tab_z);
+    }
+}
+
+module FullBox() {
+    difference() {
+        union() {
+            Main();
+            translate([0, (-POST_SIZE / 2) + (inner_z - POST_SIZE - SEN66_Y), 0])
+                BoltPostsPositive(55, inner_z + WALL_THICKNESS);
+
+            translate([0, (-(inner_y / 2)) + (PCB_Y / 2) + PARTS_Y, 0])
+                PCBTabs();
+            translate([0, (inner_y / 2) - SEN66_Y, 0])
+                SEN66Tabs();
+        }
+
+        translate([0, (-POST_SIZE / 2) + (inner_z - POST_SIZE - SEN66_Y), 0])
+            BoltPostsNegative(55, inner_z + WALL_THICKNESS);
+    }
+}
+
+module BottomSlice() {
+    difference() {
+        FullBox();
+        translate([0, 0, 12])
+            linear_extrude(60)
+            square(size = 60, center = true);
+    }
+}
+
+module SEN66Tabs() {
+    tab_x = 10;
+    tab_y = 2;
+    tab_z = 6;
+
+    rail_x = 3;
+
+    translate([0, 0, (SEN66_Z + SEN66_BUFFER_Z) / 2])
+        for(j = [0, 180]) {
+            rotate([0, j, 0])
+                translate([0, 0, -(SEN66_Z + SEN66_BUFFER_Z) / 2])
+                for(i = [0, 1]) {
+                    mirror([i, 0, 0])
+                        translate([SEN66_X / 2, 0, 0]) {
+                            translate([-(rail_x / 2), SEN66_Y / 2, 0])
+                                linear_extrude(SEN66_BUFFER_Z)
+                                square(size = [rail_x, SEN66_Y], center = true);
+                        }
+                }
+        }
+}
+
+BottomSlice();
+
+//PCBTabs();
