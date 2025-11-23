@@ -19,9 +19,10 @@ BOLT_HEAD_DIAMETER = 6;
 BOLT_HEAD_HEIGHT = 3;
 NUT_FLAT_TO_FLAT = 5.4;
 NUT_LENGTH = 3;
-FROM_BOLT_BOTTOM = 1;
+FROM_BOLT_BOTTOM = 5;
 POST_SIZE = 10;
 
+inner_x = PCB_X;
 inner_y = PCB_Y + PARTS_Y + SEN66_Y + GAP;
 inner_z = PCB_Z + (PCB_BUFFER_Z * 2);
 
@@ -112,8 +113,6 @@ module BoltPostsNegative(width, height) {
 }
 
 module Main() {
-    inner_x = max(PCB_X, SEN66_X);
-
     difference() {
         // Exterior
         translate([0, 0, -WALL_THICKNESS])
@@ -158,7 +157,7 @@ module FullBox() {
         union() {
             Main();
             translate([0, (-POST_SIZE / 2) + (inner_z - POST_SIZE - SEN66_Y), 0])
-                BoltPostsPositive(55, inner_z + WALL_THICKNESS);
+                BoltPostsPositive(inner_x + (WALL_THICKNESS * 2), inner_z + WALL_THICKNESS);
 
             translate([0, (-(inner_y / 2)) + (PCB_Y / 2) + PARTS_Y, 0])
                 PCBTabs();
@@ -166,46 +165,48 @@ module FullBox() {
                 SEN66Tabs();
         }
 
+        // Bolt cutouts
         translate([0, (-POST_SIZE / 2) + (inner_z - POST_SIZE - SEN66_Y), 0])
-            BoltPostsNegative(55, inner_z + WALL_THICKNESS);
+            BoltPostsNegative(inner_x + WALL_THICKNESS, inner_z + WALL_THICKNESS);
+
+        SensorWindow();
     }
 }
 
 module BottomSlice() {
     difference() {
         FullBox();
+
         translate([0, 0, 12])
             linear_extrude(60)
             square(size = 60, center = true);
 
-        translate([0, -29, -5])
-            linear_extrude(60)
-            square(size = 60, center = true);
+        //translate([0, -29, -5])
+        //    linear_extrude(60)
+        //    square(size = 60, center = true);
     }
 }
 
 module SEN66Tabs() {
-    tab_x = 10;
-    tab_y = 2;
-    tab_z = 6;
-
     rail_x = 3;
 
-    translate([0, 0, (SEN66_Z + SEN66_BUFFER_Z) / 2])
-        for(j = [0, 180]) {
-            rotate([0, j, 0])
-                translate([0, 0, -(SEN66_Z + SEN66_BUFFER_Z) / 2])
-                for(i = [0, 1]) {
-                    mirror([i, 0, 0])
-                        translate([SEN66_X / 2, 0, 0]) {
-                            translate([-(rail_x / 2), SEN66_Y / 2, 0])
-                                linear_extrude(SEN66_BUFFER_Z)
-                                square(size = [rail_x, SEN66_Y], center = true);
-                        }
-                }
+    for (i = [1, -1]) {
+        for (j = [1, 0]) {
+        translate([i *((SEN66_X / 2) - (rail_x / 2)), 0, 0])
+            translate([0, 0, j * (SEN66_Z + SEN66_BUFFER_Z)])
+            translate([0, SEN66_Y / 2, 0])
+            linear_extrude(SEN66_BUFFER_Z)
+            square(size = [rail_x, SEN66_Y], center = true);
         }
+    }
 }
 
-BottomSlice();
+module SensorWindow() {
+    translate([0, (inner_y / 2) + (WALL_THICKNESS / 2), SEN66_BUFFER_Z + 2])
+        linear_extrude(SEN66_Z - 4)
+        square(size = [SEN66_X - 4, WALL_THICKNESS + 2], center = true);
+}
+//BottomSlice();
+ FullBox();
 
 //PCBTabs();
