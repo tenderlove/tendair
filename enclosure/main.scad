@@ -12,15 +12,19 @@ GAP = 20; // Gap between PCB and sensor
 SEN66_X = 55; // Hopefully
 SEN66_Y = 22; // Hopefully
 SEN66_Z = 26; // Hopefully
-SEN66_BUFFER_Z = PCB_BUFFER_Z;
+SEN66_BUFFER_Z = PCB_BUFFER_Z + 0.2;
 
 BOLT_DIAMETER = 3.5;
 BOLT_HEAD_DIAMETER = 6;
 BOLT_HEAD_HEIGHT = 3;
 NUT_FLAT_TO_FLAT = 5.4;
 NUT_LENGTH = 3;
-FROM_BOLT_BOTTOM = 5;
+FROM_BOLT_BOTTOM = 15;
 POST_SIZE = 10;
+
+USB_X = WALL_THICKNESS + 1;
+USB_Y = 4.2;
+USB_Z = 9;
 
 inner_x = PCB_X;
 inner_y = PCB_Y + PARTS_Y + SEN66_Y + GAP;
@@ -157,7 +161,7 @@ module FullBox() {
         union() {
             Main();
             translate([0, (-POST_SIZE / 2) + (inner_z - POST_SIZE - SEN66_Y), 0])
-                BoltPostsPositive(inner_x + (WALL_THICKNESS * 2), inner_z + WALL_THICKNESS);
+                BoltPostsPositive(inner_x, inner_z + WALL_THICKNESS);
 
             translate([0, (-(inner_y / 2)) + (PCB_Y / 2) + PARTS_Y, 0])
                 PCBTabs();
@@ -167,9 +171,12 @@ module FullBox() {
 
         // Bolt cutouts
         translate([0, (-POST_SIZE / 2) + (inner_z - POST_SIZE - SEN66_Y), 0])
-            BoltPostsNegative(inner_x + WALL_THICKNESS, inner_z + WALL_THICKNESS);
+            BoltPostsNegative(inner_x, inner_z + WALL_THICKNESS);
 
         SensorWindow();
+
+        translate([0, (-(inner_y / 2)) + PARTS_Y - (USB_Y / 2), 0])
+            USBWindow();
     }
 }
 
@@ -177,13 +184,29 @@ module BottomSlice() {
     difference() {
         FullBox();
 
-        translate([0, 0, 12])
+        zshift = PCB_BUFFER_Z + (PCB_Z / 2) + USB_Z / 2;
+
+        translate([0, 0, zshift])
             linear_extrude(60)
             square(size = 60, center = true);
+    }
+}
 
-        //translate([0, -29, -5])
-        //    linear_extrude(60)
-        //    square(size = 60, center = true);
+module TopSlice() {
+    difference() {
+        FullBox();
+
+        usb_bottom = PCB_BUFFER_Z + (PCB_Z / 2) + (USB_Z / 2);
+
+        slicer_z = 60;
+
+        slicer_size = SEN66_X + (WALL_THICKNESS * 2) + 5;
+
+        zshift = -slicer_z + usb_bottom; //PCB_BUFFER_Z + (PCB_Z / 2) + USB_Z / 2;
+
+        translate([0, 0, zshift])
+            linear_extrude(slicer_z)
+            square(size = slicer_size, center = true);
     }
 }
 
@@ -206,7 +229,18 @@ module SensorWindow() {
         linear_extrude(SEN66_Z - 4)
         square(size = [SEN66_X - 4, WALL_THICKNESS + 2], center = true);
 }
+
+module USBWindow() {
+    usb_move_z = (PCB_Z / 2) - (USB_Z / 2) + PCB_BUFFER_Z;
+    translate([-((PCB_X / 2) + (USB_X / 2)) + 0.5, 0, usb_move_z])
+        linear_extrude(USB_Z)
+        square(size = [USB_X, USB_Y], center = true);
+}
+//PCBTabs();
 //BottomSlice();
- FullBox();
+//rotate([180, 0, 0])
+//    TopSlice();
+// FullBox();
+// USBWindow();
 
 //PCBTabs();
