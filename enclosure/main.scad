@@ -11,8 +11,13 @@ GAP = 20; // Gap between PCB and sensor
 
 SEN66_X = 55; // Hopefully
 SEN66_Y = 22; // Hopefully
-SEN66_Z = 26; // Hopefully
-SEN66_BUFFER_Z = PCB_BUFFER_Z + 0.2;
+SEN66_Z = 25; // Hopefully
+
+inner_x = PCB_X;
+inner_y = PCB_Y + PARTS_Y + SEN66_Y + GAP;
+inner_z = PCB_Z + (PCB_BUFFER_Z * 2);
+
+SEN66_BUFFER_Z = (inner_z - SEN66_Z) / 2;
 
 BOLT_DIAMETER = 3.5;
 BOLT_HEAD_DIAMETER = 6;
@@ -25,10 +30,6 @@ POST_SIZE = 10;
 USB_X = WALL_THICKNESS + 1;
 USB_Y = 4.2;
 USB_Z = 9;
-
-inner_x = PCB_X;
-inner_y = PCB_Y + PARTS_Y + SEN66_Y + GAP;
-inner_z = PCB_Z + (PCB_BUFFER_Z * 2);
 
 module BoltNegative(post_size, nominal_length, head_length) {
     flat_to_flat = NUT_FLAT_TO_FLAT;
@@ -177,6 +178,8 @@ module FullBox() {
 
         translate([0, (-(inner_y / 2)) + PARTS_Y - (USB_Y / 2), 0])
             USBWindow();
+
+        Vents();
     }
 }
 
@@ -184,7 +187,7 @@ module BottomSlice() {
     difference() {
         FullBox();
 
-        zshift = PCB_BUFFER_Z + (PCB_Z / 2) + USB_Z / 2;
+        zshift = (PCB_BUFFER_Z + (PCB_Z / 2) + USB_Z / 2) + 5;
 
         translate([0, 0, zshift])
             linear_extrude(60)
@@ -193,33 +196,30 @@ module BottomSlice() {
 }
 
 module TopSlice() {
-    difference() {
+    intersection() {
         FullBox();
 
-        usb_bottom = PCB_BUFFER_Z + (PCB_Z / 2) + (USB_Z / 2);
-
-        slicer_z = 60;
-
-        slicer_size = SEN66_X + (WALL_THICKNESS * 2) + 5;
-
-        zshift = -slicer_z + usb_bottom; //PCB_BUFFER_Z + (PCB_Z / 2) + USB_Z / 2;
+        zshift = (PCB_BUFFER_Z + (PCB_Z / 2) + USB_Z / 2) + 5;
 
         translate([0, 0, zshift])
-            linear_extrude(slicer_z)
-            square(size = slicer_size, center = true);
+            linear_extrude(60)
+            square(size = 60, center = true);
     }
 }
 
 module SEN66Tabs() {
     rail_x = 3;
+    translate([0, SEN66_Y / 2, (SEN66_Z / 2) + SEN66_BUFFER_Z]) {
+        //color("purple")
+        //    cube([SEN66_X, SEN66_Y, SEN66_Z], center = true);
 
-    for (i = [1, -1]) {
-        for (j = [1, 0]) {
-        translate([i *((SEN66_X / 2) - (rail_x / 2)), 0, 0])
-            translate([0, 0, j * (SEN66_Z + SEN66_BUFFER_Z)])
-            translate([0, SEN66_Y / 2, 0])
-            linear_extrude(SEN66_BUFFER_Z)
-            square(size = [rail_x, SEN66_Y], center = true);
+        for (j = [1, -1]) {
+            for (i = [1, -1]) {
+                xoffset = i * ((SEN66_X / 2) - (rail_x / 2));
+                zoffset = j * ((SEN66_Z / 2) + (SEN66_BUFFER_Z / 2));
+                translate([xoffset, 0, zoffset])
+                    cube(size = [rail_x, SEN66_Y, SEN66_BUFFER_Z], center = true);
+            }
         }
     }
 }
@@ -236,11 +236,40 @@ module USBWindow() {
         linear_extrude(USB_Z)
         square(size = [USB_X, USB_Y], center = true);
 }
-//PCBTabs();
-//BottomSlice();
-//rotate([180, 0, 0])
-//    TopSlice();
-// FullBox();
-// USBWindow();
 
-//PCBTabs();
+module Vents() {
+    z = PCB_Z - 7;
+    xoffset = (inner_x / 2) + WALL_THICKNESS - (WALL_THICKNESS / 2);
+    zoffset = (inner_z / 2) - (z / 2);
+    yoffset = -(inner_y / 2) + 1;
+
+    // Top Vent
+    translate([xoffset, yoffset, zoffset])
+        linear_extrude(z)
+        square(size = [WALL_THICKNESS + 0.2, 2], center = true);
+
+    total_z = inner_z + (WALL_THICKNESS * 2);
+    translate([0, -(inner_y / 2) + 1.6, (total_z / 2) - WALL_THICKNESS])
+        for(j = [15, -15]) {
+            for(i = [1, -1]) {
+                translate([j, 0, i * (total_z / 2)])
+                    cube([20, 2, WALL_THICKNESS+ 5], center = true);
+            }
+        }
+}
+
+rendering = "full";
+
+if (rendering == "top") {
+    translate([0, 60, 35])
+        rotate([180, 0, 0])
+        TopSlice();
+}
+
+if (rendering == "bottom") {
+    BottomSlice();
+}
+
+if (rendering == "full") {
+    FullBox();
+}
