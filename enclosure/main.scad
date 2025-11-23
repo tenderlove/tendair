@@ -10,7 +10,7 @@ PCB_BUFFER_Z = 4.5;
 GAP = 20; // Gap between PCB and sensor
 
 SEN66_X = 55; // Hopefully
-SEN66_Y = 21.3; // Hopefully
+SEN66_Y = 22; // Hopefully
 SEN66_Z = 26; // Hopefully
 SEN66_BUFFER_Z = PCB_BUFFER_Z;
 
@@ -57,10 +57,20 @@ module BoltNegative(post_size, nominal_length, head_length) {
             linear_extrude(head_length + 1)
             circle(d = head_diameter, $fn = 50);
 
+        // Bridges for head
+        translate([0, 0, nominal_length - LAYER_HEIGHT])
+            linear_extrude(LAYER_HEIGHT)
+            square(size = [bolt_diameter, head_diameter], center = true);
+
+        // Bridges for head
+        translate([0, 0, nominal_length - (LAYER_HEIGHT * 2)])
+            linear_extrude(LAYER_HEIGHT)
+            square(size = [bolt_diameter, bolt_diameter], center = true);
+
         // Bolt shaft
         color("green")
-            translate([0, 0, -1])
-            linear_extrude(nominal_length + 2)
+            translate([0, 0, 0])
+            linear_extrude(nominal_length + 1)
             circle(d = bolt_diameter, $fn = 50);
     }
 }
@@ -87,17 +97,18 @@ module BoltPostsPositive(width, height) {
 }
 
 module BoltPostsNegative(width, height) {
-    post_size = 10;
+    post_size = POST_SIZE;
     post_height = height;
 
     move = (width / 2) - (post_size / 2);
 
-    translate([move, 0, 0])
-        BoltNegative(post_size, post_height - BOLT_HEAD_HEIGHT, BOLT_HEAD_HEIGHT);
-
-    translate([-move, 0, 0])
-        rotate(180)
-        BoltNegative(post_size, post_height - BOLT_HEAD_HEIGHT, BOLT_HEAD_HEIGHT);
+    for (i = [0, 180]) {
+        for (j = [1, -1]) {
+            translate([j * move, 0, 0])
+                rotate(i)
+                BoltNegative(post_size, post_height - BOLT_HEAD_HEIGHT, BOLT_HEAD_HEIGHT);
+        }
+    }
 }
 
 module Main() {
@@ -164,6 +175,10 @@ module BottomSlice() {
     difference() {
         FullBox();
         translate([0, 0, 12])
+            linear_extrude(60)
+            square(size = 60, center = true);
+
+        translate([0, -29, -5])
             linear_extrude(60)
             square(size = 60, center = true);
     }
