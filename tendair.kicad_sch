@@ -3313,6 +3313,15 @@
 				(hide yes)
 			)
 		)
+		(property "URL" "https://www.digikey.com/en/products/detail/good-ark-semiconductor/GSBC847BV/24613131"
+			(at 64.77 55.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "29460b7c-1679-47e0-92b2-d2acf07dcaeb")
 		)
@@ -3589,6 +3598,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x06, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 245.11 48.26 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "URL" "https://www.digikey.com/en/products/detail/jst-sales-america-inc/SM06B-GHS-TB/807790"
 			(at 245.11 48.26 0)
 			(effects
 				(font
@@ -4004,6 +4022,15 @@
 			)
 		)
 		(property "Description" "USB Power-Only 6P Type-C Receptacle connector"
+			(at 220.98 110.49 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "URL" "https://www.digikey.com/en/products/detail/amphenol-cs-fci/10164359-00011LF/18443702"
 			(at 220.98 110.49 0)
 			(effects
 				(font
@@ -4862,6 +4889,15 @@
 				(hide yes)
 			)
 		)
+		(property "URL" "https://www.digikey.com/en/products/detail/good-ark-semiconductor/GSBC847BV/24613131"
+			(at 64.77 76.2 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "29460b7c-1679-47e0-92b2-d2acf07dcaec")
 		)
@@ -5208,6 +5244,15 @@
 		)
 		(property "Description" "802.11 b/g/n Wi­Fi and Bluetooth 5 module, ESP32­C3 SoC, RISC­V microprocessor, On-board antenna"
 			(at 143.51 131.445 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "URL" "https://www.digikey.com/en/products/detail/espressif-systems/ESP32-C3-WROOM-02-H4/14553033"
+			(at 143.51 132.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)

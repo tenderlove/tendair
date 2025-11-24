@@ -11,7 +11,7 @@ GAP = 20; // Gap between PCB and sensor
 
 SEN66_X = 55; // Hopefully
 SEN66_Y = 22; // Hopefully
-SEN66_Z = 25; // Hopefully
+SEN66_Z = 25.5; // Hopefully
 
 inner_x = PCB_X;
 inner_y = PCB_Y + PARTS_Y + SEN66_Y + GAP;
