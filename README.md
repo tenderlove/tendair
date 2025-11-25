@@ -12,3 +12,7 @@ Here is a photo:
 This is basically just a new version of my [ESP8266 AQ sensor](https://github.com/tenderlove/esp8266aq).
 
 I haven't made an enclosure yet, I'm working on that now.
+
+## ESPHome
+
+- [esphome#9254](https://github.com/esphome/esphome/pull/9254)

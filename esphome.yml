@@ -1,0 +1,62 @@
+esphome:
+  name: tendair-table
+
+esp32:
+  # board: esp32-c3-devkitm-1
+  board: esp32-c3-devkitc-02
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  - platform: esphome
+    password: ""
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Tendair-Table Fallback Hotspot"
+    password: "2qKOhE6AxRcd"
+
+captive_portal:
+
+i2c:
+  sda: GPIO08
+  scl: GPIO04
+
+sensor:
+  - platform: sen5x
+    id: my_sen66
+    model: sen66
+    pm_1_0:
+      name: PM <1µm Weight concentration
+    pm_2_5:
+      name: PM <2.5µm Weight concentration
+    pm_4_0:
+      name: PM <4µm Weight concentration
+    pm_10_0:
+      name: PM <10µm Weight concentration
+    temperature:
+      name: Temperature
+    humidity:
+      name: Humidity
+    voc:
+      name: VOC
+    nox:
+      name: NOx
+    co2:
+      name: CO₂
+
+interval:
+  - interval: 7d
+    then:
+      - sen5x.start_fan_autoclean: my_sen66
