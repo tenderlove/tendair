@@ -9,6 +9,9 @@ esp32:
 
 # Enable logging
 logger:
+  hardware_uart: UART0
+  deassert_rts_dtr: true
+  level: DEBUG
 
 # Enable Home Assistant API
 api:
