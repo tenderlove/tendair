@@ -1,4 +1,4 @@
-menu "SEN66 I2C Configuration"
+menu "Tendair Configuration"
 
     orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
 
@@ -21,5 +21,23 @@ menu "SEN66 I2C Configuration"
         default 100000
         help
             I2C Speed of Master device.
+
+    config WIFI_SSID
+        string "Wifi SSID"
+        default "tendair"
+        help
+            Wifi SSID
+
+    config WIFI_PASS
+        string "Wifi Password"
+        default "tendair"
+        help
+            Wifi Password
+
+    config MQTT_PREFIX
+        string "MQTT Prefix"
+        default "/home/mainfloor/office"
+        help
+            MQTT prefix string
 
 endmenu

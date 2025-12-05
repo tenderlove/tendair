@@ -10,38 +10,9 @@
 #include "sen66_i2c.h"
 #include "sensirion_common.h"
 #include "sensirion_i2c_hal.h"
+#include "cJSON.h"
 
 static const char *TAG = "tendair";
-
-#define EXAMPLE_ESP_MAXIMUM_RETRY  3
-
-#if CONFIG_ESP_STATION_EXAMPLE_WPA3_SAE_PWE_HUNT_AND_PECK
-#define ESP_WIFI_SAE_MODE WPA3_SAE_PWE_HUNT_AND_PECK
-#define EXAMPLE_H2E_IDENTIFIER ""
-#elif CONFIG_ESP_STATION_EXAMPLE_WPA3_SAE_PWE_HASH_TO_ELEMENT
-#define ESP_WIFI_SAE_MODE WPA3_SAE_PWE_HASH_TO_ELEMENT
-#define EXAMPLE_H2E_IDENTIFIER CONFIG_ESP_WIFI_PW_ID
-#elif CONFIG_ESP_STATION_EXAMPLE_WPA3_SAE_PWE_BOTH
-#define ESP_WIFI_SAE_MODE WPA3_SAE_PWE_BOTH
-#define EXAMPLE_H2E_IDENTIFIER CONFIG_ESP_WIFI_PW_ID
-#endif
-#if CONFIG_ESP_WIFI_AUTH_OPEN
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_OPEN
-#elif CONFIG_ESP_WIFI_AUTH_WEP
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WEP
-#elif CONFIG_ESP_WIFI_AUTH_WPA_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WPA2_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WPA_WPA2_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA_WPA2_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WPA3_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA3_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WPA2_WPA3_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_WPA3_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WAPI_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WAPI_PSK
-#endif
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
@@ -51,6 +22,8 @@ static EventGroupHandle_t s_wifi_event_group;
  * - we failed to connect after the maximum amount of retries */
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
+
+#define MQTT_PREFIX CONFIG_MQTT_PREFIX
 
 static int s_retry_num = 0;
 
@@ -67,7 +40,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
+        if (s_retry_num < 3) {
             esp_wifi_connect();
             s_retry_num++;
             ESP_LOGI(TAG, "retry to connect to the AP");
@@ -110,8 +83,8 @@ void wifi_init_sta(void)
 
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = EXAMPLE_ESP_WIFI_SSID,
-            .password = EXAMPLE_ESP_WIFI_PASS,
+            .ssid = CONFIG_WIFI_SSID,
+            .password = CONFIG_WIFI_PASS,
             /* Authmode threshold resets to WPA2 as default if password matches WPA2 standards (password len => 8).
              * If you want to connect the device to deprecated WEP/WPA networks, Please set the threshold value
              * to WIFI_AUTH_WEP/WIFI_AUTH_WPA_PSK and set the password with length and format matching to
@@ -142,11 +115,9 @@ void wifi_init_sta(void)
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
-                 EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+        ESP_LOGI(TAG, "connected to ap SSID:%s", CONFIG_WIFI_SSID);
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
-                 EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+        ESP_LOGI(TAG, "Failed to connect to SSID:%s", CONFIG_WIFI_SSID);
     } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
@@ -161,8 +132,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        msg_id = esp_mqtt_client_publish(client, "/topic/qos1", "data_3", 0, 1, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
         break;
 
     case MQTT_EVENT_DISCONNECTED:
@@ -256,35 +225,23 @@ void app_main(void)
                         &co2)) {
             }
 
-            char buf[32] = {0};
-            int len = 0;
+            cJSON *root = cJSON_CreateObject();
+            cJSON_AddNumberToObject(root, "pm1.0", mass_concentration_pm1p0);
+            cJSON_AddNumberToObject(root, "pm2.5", mass_concentration_pm2p5);
+            cJSON_AddNumberToObject(root, "pm4.0", mass_concentration_pm4p0);
+            cJSON_AddNumberToObject(root, "pm10.0", mass_concentration_pm10p0);
+            cJSON_AddNumberToObject(root, "humidity", ambient_humidity / 100.0);
+            cJSON_AddNumberToObject(root, "temperature", ambient_temperature / 200.0);
+            cJSON_AddNumberToObject(root, "voc_index", voc_index);
+            cJSON_AddNumberToObject(root, "nox_index", nox_index);
+            cJSON_AddNumberToObject(root, "co2", co2);
 
-            len = sprintf(buf, "%d", mass_concentration_pm1p0);
-            esp_mqtt_client_publish(client, "/home/office/pm1.0", buf, len, 1, 0);
-
-            len = sprintf(buf, "%d", mass_concentration_pm2p5);
-            esp_mqtt_client_publish(client, "/home/office/pm2.5", buf, len, 1, 0);
-
-            len = sprintf(buf, "%d", mass_concentration_pm4p0);
-            esp_mqtt_client_publish(client, "/home/office/pm4.0", buf, len, 1, 0);
-
-            len = sprintf(buf, "%d", mass_concentration_pm10p0);
-            esp_mqtt_client_publish(client, "/home/office/pm10.0", buf, len, 1, 0);
-
-            len = sprintf(buf, "%0.2f", ambient_humidity / 100.0);
-            esp_mqtt_client_publish(client, "/home/office/rh", buf, len, 1, 0);
-
-            len = sprintf(buf, "%0.2f", ambient_temperature / 200.0);
-            esp_mqtt_client_publish(client, "/home/office/temp", buf, len, 1, 0);
-
-            len = sprintf(buf, "%d", voc_index);
-            esp_mqtt_client_publish(client, "/home/office/voc", buf, len, 1, 0);
-
-            len = sprintf(buf, "%d", nox_index);
-            esp_mqtt_client_publish(client, "/home/office/nox", buf, len, 1, 0);
-
-            len = sprintf(buf, "%d", co2);
-            esp_mqtt_client_publish(client, "/home/office/co2", buf, len, 1, 0);
+            char *json_string = cJSON_Print(root);
+            if (json_string != NULL) {
+                esp_mqtt_client_publish(client, MQTT_PREFIX "/measurement", json_string, 0, 1, 0);
+                cJSON_free(json_string);
+            }
+            cJSON_Delete(root);
         }
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
