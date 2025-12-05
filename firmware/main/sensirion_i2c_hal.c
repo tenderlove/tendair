@@ -117,7 +117,7 @@ void sensirion_i2c_hal_init(i2c_master_bus_handle_t *bus_handle) {
     i2c_device_config_t dev_config = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = SEN66_SENSOR_ADDR,
-        .scl_speed_hz = 100000,
+        .scl_speed_hz = I2C_MASTER_FREQ_HZ,
     };
     ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &dev_config, &dev_handle));
 }
@@ -139,9 +139,9 @@ void sensirion_i2c_hal_free(void) {
  * @returns 0 on success, error code otherwise
  */
 int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
-    ESP_LOGI(TAG, "sensirion_i2c_hal_read: len: %d", count);
+    ESP_LOGD(TAG, "sensirion_i2c_hal_read: len: %d", count);
     ESP_ERROR_CHECK(i2c_master_receive(dev_handle, data, count, I2C_MASTER_TIMEOUT_MS));
-    ESP_LOGI(TAG, "READ OK");
+    ESP_LOGD(TAG, "READ OK");
     return (int8_t)ESP_OK;
 }
 
@@ -158,9 +158,9 @@ int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
  */
 int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data,
                                uint16_t count) {
-    ESP_LOGI(TAG, "sensirion_i2c_hal_write: len: %d", count);
+    ESP_LOGD(TAG, "sensirion_i2c_hal_write: len: %d", count);
     ESP_ERROR_CHECK(i2c_master_transmit(dev_handle, data, count, I2C_MASTER_TIMEOUT_MS));
-    ESP_LOGI(TAG, "WRITE OK");
+    ESP_LOGD(TAG, "WRITE OK");
     return (int8_t)ESP_OK;
 }
 
@@ -173,6 +173,6 @@ int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data,
  * @param useconds the sleep time in microseconds
  */
 void sensirion_i2c_hal_sleep_usec(uint32_t useconds) {
-    ESP_LOGI(TAG, "sensirion_i2c_hal_sleep: %d usec", useconds);
+    ESP_LOGD(TAG, "sensirion_i2c_hal_sleep: %d usec", useconds);
     SLEEP_MS(useconds / 1000);
 }
