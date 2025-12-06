@@ -34,9 +34,15 @@ menu "Tendair Configuration"
         help
             Wifi Password
 
+    config MQTT_URI
+        string "MQTT URI"
+        default "mqtt://tender.home"
+        help
+            MQTT uri
+
     config MQTT_PREFIX
         string "MQTT Prefix"
-        default "/home/mainfloor/office"
+        default "/home/main/office"
         help
             MQTT prefix string
 

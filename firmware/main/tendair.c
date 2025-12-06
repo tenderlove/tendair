@@ -191,7 +191,7 @@ void app_main(void)
     wifi_init_sta();
 
     esp_mqtt_client_config_t mqtt_cfg = {
-        .broker.address.uri = "mqtt://tender.home",
+        .broker.address.uri = CONFIG_MQTT_URI,
     };
 
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
