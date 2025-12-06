@@ -15,6 +15,8 @@ MQTT::Client.connect('localhost') do |c|
       # These come across as ints sometimes, but influx wants floats
       values["humidity"] = values["humidity"].to_f
       values["temperature"] = values["temperature"].to_f
+      values["voc_index"] = values["voc_index"].to_f
+      values["nox_index"] = values["nox_index"].to_f
 
       data = {
         values: values,

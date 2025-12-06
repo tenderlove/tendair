@@ -232,8 +232,8 @@ void app_main(void)
             cJSON_AddNumberToObject(root, "pm10.0", mass_concentration_pm10p0);
             cJSON_AddNumberToObject(root, "humidity", ambient_humidity / 100.0);
             cJSON_AddNumberToObject(root, "temperature", ambient_temperature / 200.0);
-            cJSON_AddNumberToObject(root, "voc_index", voc_index);
-            cJSON_AddNumberToObject(root, "nox_index", nox_index);
+            cJSON_AddNumberToObject(root, "voc_index", voc_index / 10.0);
+            cJSON_AddNumberToObject(root, "nox_index", nox_index / 10.0);
             cJSON_AddNumberToObject(root, "co2", co2);
 
             char *json_string = cJSON_Print(root);
