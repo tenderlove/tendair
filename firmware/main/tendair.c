@@ -213,7 +213,7 @@ void app_main(void)
         uint16_t co2;
 
         if (!sen66_get_data_ready(&padding, &ready) && ready) {
-            if (!sen66_read_measured_values_as_integers(
+            if (sen66_read_measured_values_as_integers(
                         &mass_concentration_pm1p0,
                         &mass_concentration_pm2p5,
                         &mass_concentration_pm4p0,
@@ -222,26 +222,26 @@ void app_main(void)
                         &ambient_temperature,
                         &voc_index,
                         &nox_index,
-                        &co2)) {
-            }
+                        &co2) == NO_ERROR && co2 != 0xFFFF && nox_index != 0x7FFF) {
 
-            cJSON *root = cJSON_CreateObject();
-            cJSON_AddNumberToObject(root, "pm1.0", mass_concentration_pm1p0);
-            cJSON_AddNumberToObject(root, "pm2.5", mass_concentration_pm2p5);
-            cJSON_AddNumberToObject(root, "pm4.0", mass_concentration_pm4p0);
-            cJSON_AddNumberToObject(root, "pm10.0", mass_concentration_pm10p0);
-            cJSON_AddNumberToObject(root, "humidity", ambient_humidity / 100.0);
-            cJSON_AddNumberToObject(root, "temperature", ambient_temperature / 200.0);
-            cJSON_AddNumberToObject(root, "voc_index", voc_index / 10.0);
-            cJSON_AddNumberToObject(root, "nox_index", nox_index / 10.0);
-            cJSON_AddNumberToObject(root, "co2", co2);
+                cJSON *root = cJSON_CreateObject();
+                cJSON_AddNumberToObject(root, "pm1.0", mass_concentration_pm1p0);
+                cJSON_AddNumberToObject(root, "pm2.5", mass_concentration_pm2p5);
+                cJSON_AddNumberToObject(root, "pm4.0", mass_concentration_pm4p0);
+                cJSON_AddNumberToObject(root, "pm10.0", mass_concentration_pm10p0);
+                cJSON_AddNumberToObject(root, "humidity", ambient_humidity / 100.0);
+                cJSON_AddNumberToObject(root, "temperature", ambient_temperature / 200.0);
+                cJSON_AddNumberToObject(root, "voc_index", voc_index / 10.0);
+                cJSON_AddNumberToObject(root, "nox_index", nox_index / 10.0);
+                cJSON_AddNumberToObject(root, "co2", co2);
 
-            char *json_string = cJSON_Print(root);
-            if (json_string != NULL) {
-                esp_mqtt_client_publish(client, MQTT_PREFIX "/measurement", json_string, 0, 1, 0);
-                cJSON_free(json_string);
+                char *json_string = cJSON_Print(root);
+                if (json_string != NULL) {
+                    esp_mqtt_client_publish(client, MQTT_PREFIX "/measurement", json_string, 0, 1, 0);
+                    cJSON_free(json_string);
+                }
+                cJSON_Delete(root);
             }
-            cJSON_Delete(root);
         }
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
