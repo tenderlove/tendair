@@ -199,19 +199,20 @@ void app_main(void)
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
 
-    while (true) {
-        uint8_t padding;
-        bool ready;
-        uint16_t mass_concentration_pm1p0;
-        uint16_t mass_concentration_pm2p5;
-        uint16_t mass_concentration_pm4p0;
-        uint16_t mass_concentration_pm10p0;
-        int16_t ambient_humidity;
-        int16_t ambient_temperature;
-        int16_t voc_index;
-        int16_t nox_index;
-        uint16_t co2;
+    uint8_t padding;
+    bool ready;
+    uint16_t mass_concentration_pm1p0;
+    uint16_t mass_concentration_pm2p5;
+    uint16_t mass_concentration_pm4p0;
+    uint16_t mass_concentration_pm10p0;
+    int16_t ambient_humidity;
+    int16_t ambient_temperature;
+    int16_t voc_index;
+    int16_t nox_index;
+    uint16_t co2;
 
+    // Loop until everything is warmed up
+    while (true) {
         if (!sen66_get_data_ready(&padding, &ready) && ready) {
             if (sen66_read_measured_values_as_integers(
                         &mass_concentration_pm1p0,
@@ -222,7 +223,37 @@ void app_main(void)
                         &ambient_temperature,
                         &voc_index,
                         &nox_index,
-                        &co2) == NO_ERROR && co2 != 0xFFFF && nox_index != 0x7FFF) {
+                        &co2) == NO_ERROR) {
+
+                if (mass_concentration_pm1p0 != 0xFFFF &&
+                        mass_concentration_pm2p5 != 0xFFFF &&
+                        mass_concentration_pm4p0 != 0xFFFF &&
+                        mass_concentration_pm10p0 != 0xFFFF &&
+                        ambient_humidity != 0x7FFF &&
+                        ambient_temperature != 0x7FFF &&
+                        voc_index != 0x7FFF &&
+                        nox_index != 0x7FFF &&
+                        co2 != 0xFFFF) {
+                    break;
+                }
+            }
+        }
+
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
+
+    while (true) {
+        if (!sen66_get_data_ready(&padding, &ready) && ready) {
+            if (sen66_read_measured_values_as_integers(
+                        &mass_concentration_pm1p0,
+                        &mass_concentration_pm2p5,
+                        &mass_concentration_pm4p0,
+                        &mass_concentration_pm10p0,
+                        &ambient_humidity,
+                        &ambient_temperature,
+                        &voc_index,
+                        &nox_index,
+                        &co2) == NO_ERROR) {
 
                 cJSON *root = cJSON_CreateObject();
                 cJSON_AddNumberToObject(root, "pm1.0", mass_concentration_pm1p0);
@@ -244,7 +275,7 @@ void app_main(void)
             }
         }
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(200 / portTICK_PERIOD_MS);
     }
 
     printf("Restarting now.\n");
