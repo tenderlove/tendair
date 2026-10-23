@@ -1,0 +1,76 @@
+substitutions:
+  name: tendair
+
+esphome:
+  name: ${name}
+
+esp32:
+  board: esp32-c3-devkitc-02
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  hardware_uart: UART0
+  deassert_rts_dtr: true
+  level: DEBUG
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    encryption:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Tendair Fallback Hotspot"
+    password: !secret ap_password
+
+captive_portal:
+
+i2c:
+  sda: GPIO08
+  scl: GPIO04
+
+sensor:
+  - platform: sen6x
+    id: sen66
+    type: SEN66
+    pm_1_0:
+      name: "PM <1µm Weight concentration"
+      id: pm_1_0
+      accuracy_decimals: 1
+    pm_2_5:
+      name: "PM <2.5µm Weight concentration"
+      id: pm_2_5
+      accuracy_decimals: 1
+    pm_4_0:
+      name: "PM <4µm Weight concentration"
+      id: pm_4_0
+      accuracy_decimals: 1
+    pm_10_0:
+      name: "PM <10µm Weight concentration"
+      id: pm_10_0
+      accuracy_decimals: 1
+    temperature:
+      name: "Temperature"
+      accuracy_decimals: 1
+    humidity:
+      name: "Humidity"
+      accuracy_decimals: 0
+    voc_index:
+      name: "VOC"
+    nox_index:
+      name: "NOₓ"
+      accuracy_decimals: 0
+    co2:
+      name: "CO₂"
+      accuracy_decimals: 0
+    update_interval: 10s
