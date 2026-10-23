@@ -3,6 +3,7 @@
 #include "freertos/task.h"
 #include "driver/i2c_master.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "esp_wifi.h"
 #include "esp_netif.h"
 #include "mqtt_client.h"
@@ -25,7 +26,20 @@ static EventGroupHandle_t s_wifi_event_group;
 
 #define MQTT_PREFIX CONFIG_MQTT_PREFIX
 
+/* Fast-retry budget consumed on consecutive disconnects; reset on each successful
+ * association. Once exhausted, s_reconnect_timer takes over with a slow cadence
+ * so the device keeps trying forever instead of giving up. */
+#define WIFI_FAST_RETRY_MAX 3
+#define WIFI_SLOW_RETRY_US (10ULL * 1000 * 1000)
+
 static int s_retry_num = 0;
+static esp_timer_handle_t s_reconnect_timer;
+
+static void reconnect_timer_cb(void *arg)
+{
+    ESP_LOGI(TAG, "reconnect timer fired, attempting wifi reconnect");
+    esp_wifi_connect();
+}
 
 static void log_error_if_nonzero(const char *message, int error_code)
 {
@@ -40,14 +54,15 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < 3) {
+        if (s_retry_num < WIFI_FAST_RETRY_MAX) {
             esp_wifi_connect();
             s_retry_num++;
-            ESP_LOGI(TAG, "retry to connect to the AP");
+            ESP_LOGI(TAG, "retry to connect to the AP (%d/%d)", s_retry_num, WIFI_FAST_RETRY_MAX);
         } else {
+            ESP_LOGI(TAG, "fast retries exhausted, scheduling reconnect");
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            esp_timer_start_once(s_reconnect_timer, WIFI_SLOW_RETRY_US);
         }
-        ESP_LOGI(TAG,"connect to the AP fail");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
@@ -98,6 +113,12 @@ void wifi_init_sta(void)
 #endif
         },
     };
+    const esp_timer_create_args_t reconnect_timer_args = {
+        .callback = &reconnect_timer_cb,
+        .name = "wifi_reconnect",
+    };
+    ESP_ERROR_CHECK(esp_timer_create(&reconnect_timer_args, &s_reconnect_timer));
+
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
     ESP_ERROR_CHECK(esp_wifi_start() );
