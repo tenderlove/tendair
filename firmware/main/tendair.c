@@ -12,6 +12,7 @@
 #include "sensirion_common.h"
 #include "sensirion_i2c_hal.h"
 #include "cJSON.h"
+#include "homekit.h"
 
 static const char *TAG = "tendair";
 
@@ -122,6 +123,8 @@ void wifi_init_sta(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
     ESP_ERROR_CHECK(esp_wifi_start() );
+    /* Modem sleep drops multicast, which breaks mDNS / HomeKit discovery */
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
 
@@ -211,6 +214,8 @@ void app_main(void)
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     wifi_init_sta();
 
+    homekit_init();
+
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = CONFIG_MQTT_URI,
     };
@@ -276,6 +281,8 @@ void app_main(void)
                         &nox_index,
                         &co2) == NO_ERROR) {
 
+                /* PM values are published raw (10x µg/m³); clients do the
+                 * float conversion themselves */
                 cJSON *root = cJSON_CreateObject();
                 cJSON_AddNumberToObject(root, "pm1.0", mass_concentration_pm1p0);
                 cJSON_AddNumberToObject(root, "pm2.5", mass_concentration_pm2p5);
@@ -293,6 +300,17 @@ void app_main(void)
                     cJSON_free(json_string);
                 }
                 cJSON_Delete(root);
+
+                homekit_reading_t reading = {
+                    .pm2p5 = mass_concentration_pm2p5 / 10.0f,
+                    .pm10p0 = mass_concentration_pm10p0 / 10.0f,
+                    .humidity = ambient_humidity / 100.0f,
+                    .temperature = ambient_temperature / 200.0f,
+                    .voc_index = voc_index / 10.0f,
+                    .nox_index = nox_index / 10.0f,
+                    .co2 = co2,
+                };
+                homekit_update(&reading);
             }
         }
 

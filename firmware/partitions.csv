@@ -1,0 +1,7 @@
+# Name,      Type, SubType, Offset,   Size
+# The HomeKit stack doesn't fit in the default 1MB app partition, so use the
+# full 4MB of the ESP32-C3-WROOM-02-H4.  HomeKit pairings live in "nvs".
+nvs,         data, nvs,     0x9000,   0x6000,
+phy_init,    data, phy,     0xf000,   0x1000,
+factory,     app,  factory, 0x10000,  0x300000,
+factory_nvs, data, nvs,     0x310000, 0x6000,

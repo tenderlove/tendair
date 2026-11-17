@@ -42,8 +42,27 @@ menu "Tendair Configuration"
 
     config MQTT_PREFIX
         string "MQTT Prefix"
-        default "/home/main/office"
+        default "home/main/office"
         help
             MQTT prefix string
+
+    config HOMEKIT_NAME
+        string "HomeKit accessory name"
+        default "Tendair"
+        help
+            Name the accessory advertises to the Home app
+
+    config HOMEKIT_SETUP_CODE
+        string "HomeKit setup code"
+        default "111-22-333"
+        help
+            Pairing code entered in the Home app, format XXX-XX-XXX.
+            Apple rejects trivial codes like 000-00-000 or 123-45-678.
+
+    config HOMEKIT_SETUP_ID
+        string "HomeKit setup ID"
+        default "TNDR"
+        help
+            Four character setup ID (A-Z, 0-9) used in the pairing QR code
 
 endmenu

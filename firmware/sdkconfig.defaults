@@ -1,1 +1,19 @@
 CONFIG_MQTT_SKIP_PUBLISH_IF_DISCONNECTED=y
+
+# Flash / partitions (ESP32-C3-WROOM-02-H4 has 4MB)
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# HomeKit needs more sockets than the default (HAP server + mDNS + MQTT)
+CONFIG_LWIP_MAX_SOCKETS=16
+CONFIG_LWIP_SO_REUSE=y
+CONFIG_MBEDTLS_HARDWARE_MPI=y
+
+# HomeKit setup runs on the main task
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# Don't use WPA3. On WiFi 7 routers the WPA3-only 2.4GHz link is often part of
+# an MLO network, which doesn't reliably forward our mDNS multicast to other
+# clients on it, so HomeKit can't find us. Stick to the plain WPA2 2.4GHz AP.
+# CONFIG_ESP_WIFI_ENABLE_WPA3_SAE is not set

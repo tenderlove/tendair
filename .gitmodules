@@ -1,0 +1,3 @@
+[submodule "firmware/esp-homekit-sdk"]
+	path = firmware/esp-homekit-sdk
+	url = https://github.com/espressif/esp-homekit-sdk.git
